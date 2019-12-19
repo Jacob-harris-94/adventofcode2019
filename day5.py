@@ -7,32 +7,39 @@ def get_inputs(path):
     values = list(infile.readline().split(','))
   return [int(val) for val in values]
 
-def _add(state, ptr, args):
+def _add(state, ptr, modes):
+  args = [state[state[ii]] if modes[ii-(ptr+1)] == 0 else state[ii] for ii in range(ptr+1, ptr+3)]
+  args.append(state[ptr+3])
   state[args[2]] = args[0] + args[1]
-  print(f"ADD: {args}")
+  # print(f"ADD: {args}")
   return ptr + 4
 
-def _multiply(state, ptr, args):
+def _multiply(state, ptr, modes):
+  args = [state[state[ii]] if modes[ii-(ptr+1)] == 0 else state[ii] for ii in range(ptr+1, ptr+3)]
+  args.append(state[ptr+3])
   state[args[2]] = args[0] * args[1]
-  print(f"MULTIPLY: {args}")
+  # print(f"MULTIPLY: {args}")
   return ptr + 4
 
-def _get_input(state, ptr, args):
+def _get_input(state, ptr, modes):
   try:
     val = int(input("program requesting integer INPUT: "))
   except:
     print("can't convert to int.")
     raise
-  state[args[0]] = val
+  state[state[ptr+1]] = val
   return ptr + 2
 
-def _output(state, ptr, args):
-  val = state[args[0]]
-  print("OUTPUT: " + str())
+def _output(state, ptr, modes):
+  args = [state[state[ii]] if modes[ii-(ptr+1)] == 0 else state[ii] for ii in range(ptr+1, ptr+2)]
+  val = args[0]
+  if val != 0:
+    print(f"ptr, state[ptr], state: {ptr, state[ptr], state}")
+  print("OUTPUT: " + str(val))
   return ptr + 2
 
-def _halt(state, ptr, args):
-  print("HALT")
+def _halt(state, ptr, modes):
+  # print("HALT")
   return len(state)
 
 operations = {
@@ -46,7 +53,7 @@ operations = {
 def run(state):
   ptr = 0
   while ptr < len(state):
-    print(f"state, ptr: {state}, {ptr}")
+    # print(f"state, ptr: {state}, {ptr}")
     instruction = state[ptr]
     # number places for 5 digits (through 10000)
     digits = [(instruction//10**ii)%(10) for ii in range(5)]
@@ -57,26 +64,14 @@ def run(state):
     if opcode not in operations.keys():
       raise ValueError("invalid opcode: " + str(state[ptr]) + " at position: " + str(ptr))
     else:
-      # TODO: only works for non-immediate addressing
-      # assert(all(m == 0 for m in modes))
+      if len(state) - ptr < 4:
+        break # TODO: this ignores short instructions
       
       # 0 == position mode, 1 == immediate mode
-      args = [state[state[ii]] if modes[ii-(ptr+1)] == 0 else state[ii] for ii in range(ptr+1, ptr+3)]
-
-      # args = [state[ii] for ii in range(ptr+1, ptr+4)]
-
-      # 0 == position mode, 1 == immediate mode
-      # args = []
-      # for ii in range(ptr+1, ptr+3):
-      #   if modes[ii-(ptr+1)] == 0:
-      #     # position mode is the value pointed to by the arg at that position
-      #     args.append(state[state[ii]])
-      #     print(f"position arg {args[-1]}")
-      #   else:
-      #     args.append(state[ii])
-      #     print(f"immediate arg {args[-1]}")
-      args.append(state[ptr+3])
-      ptr = operations[opcode](state, ptr, args)
+      # args = [state[state[ii]] if modes[ii-(ptr+1)] == 0 else state[ii] for ii in range(ptr+1, ptr+3)]
+      # args.append(state[ptr+3])
+      args = None
+      ptr = operations[opcode](state, ptr, modes)
   return state
 
 """
@@ -98,13 +93,12 @@ def part_two(state):
 if __name__ == "__main__":
   print("main, day 5!")
 
-
-  state = get_inputs("inputs/day5_test_input.txt")
-  run(state.copy())
-  exit(-1)
+  # state = get_inputs("inputs/day5_test_input.txt")
+  # run(state.copy())
+  # exit(0)
 
   test_day_2 = True
-  # test_day_2 = False
+  test_day_2 = False
   if test_day_2:
     state = get_inputs("inputs/day2_input.txt")
     assert part_one(state.copy(), 12, 2) == 2782414
